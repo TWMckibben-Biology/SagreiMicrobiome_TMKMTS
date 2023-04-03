@@ -75,7 +75,7 @@ library(microbiomeutilities)
 
 #Step 1: Load data
 ###I'm loading in my sequencing run data, MB_040722_epi2me
-MB_040722_epi2me <- read.csv("C:/MSOfficeFiles/Excel/MicrobiomeProject/MB_040722_epi2me.csv")
+#MB_040722_epi2me <- read.csv("C:/MSOfficeFiles/Excel/MicrobiomeProject/MB_040722_epi2me.csv")
 
 #Step 2: Reduce dataset to just barcodes and species
 MB_BarcodesandSpecies = data.frame(MB_040722_epi2me$barcode, MB_040722_epi2me$species)
@@ -99,7 +99,7 @@ rownames(MB_SpeciesPerBarcode) = MB_SpeciesPerBarcode$Var1
 
 #I would highly recommend saving this csv as it is finally small
 #enough to open in excel without melting your computer
-write.csv(MB_SpeciesPerBarcode, "C:/MSOfficeFiles/Excel/Microbiome_Clean/SpeciesPerBarcode.csv")
+#write.csv(MB_SpeciesPerBarcode, "C:/MSOfficeFiles/Excel/Microbiome_Clean/SpeciesPerBarcode.csv")
 
 ######Data Analysis#####
 #For metrics such as Shannon's, I am creating a file that I can add
@@ -126,7 +126,7 @@ MB_SigTax = colnames(MB_PERF_FILT$filtX)
 MB_Filt = data.frame(t(MB_SpeciesPerBarcode))
 MB_Filtrow = grep(paste(MB_SigTax, collapse = "|"), MB_SpeciesPerBarcode$Var1)
 MB_Filt = data.frame(MB_SpeciesPerBarcode[MB_Filtrow, -c(1,26)])
-write.csv(MB_Filt, "C:/MSOfficeFiles/Excel/Microbiome_Clean/MB_Filt.csv")
+#write.csv(MB_Filt, "C:/MSOfficeFiles/Excel/Microbiome_Clean/MB_Filt.csv")
 rm(MB_Filtrow)
 rm(MB_SigTax)
 
@@ -241,7 +241,7 @@ MB_Taxonomy$genus <- MB_Taxonomy$genus %>% replace_na('genus')
 MB_Taxonomy$species <- MB_Taxonomy$species %>% replace_na('species')
 MB_Taxonomy$strain <- MB_Taxonomy$strain %>% replace_na('strain')
 MB_Taxonomy = data.frame(MB_Taxonomy[,-1:-2])
-write.csv(MB_Taxonomy, "MB_Taxonomy.csv")
+#write.csv(MB_Taxonomy, "MB_Taxonomy.csv")
 
 #OTU table-Needs row names before Tax becomes a matrix
 MB_Filt = subset(MB_Filt, row.names(MB_Filt)%in%row.names(MB_Taxonomy))
@@ -265,6 +265,7 @@ SAM = sample_data(mydat)
 
 #Now we can start phyloseq analysis
 MBphy = phyloseq(OTU,TAX,SAM)
+
 
 sort(phyloseq::sample_sums(MBphy))
 
@@ -338,7 +339,7 @@ phyloseq::otu_table(ps_phylum)
 (ps_phylum <- phyloseq::prune_taxa(phyloseq::taxa_sums(ps_phylum) > 100, ps_phylum)) 
 taxa_sums(ps_phylum@otu_table)
 
-phyloseq::otu_table(ps_phylumfw)
+yphyloseq::otu_table(ps_phylumfw)
 (ps_phylumfw <- phyloseq::prune_taxa(phyloseq::taxa_sums(ps_phylumfw) > 100, ps_phylumfw)) 
 taxa_sums(ps_phylumfw@otu_table)
 
@@ -377,16 +378,16 @@ control_otu <- data.frame(phyloseq::otu_table(control))
 div_otu <- data.frame(phyloseq::otu_table(diverse))
 
 #HMP test
-group_data <- list(control_otu, div_otu)
-xdc <- HMP::Xdc.sevsample(group_data)         
-write.table(xdc, "HMP_results.csv")
+#group_data <- list(control_otu, div_otu)
+#xdc <- HMP::Xdc.sevsample(group_data)         
+#write.table(xdc, "HMP_results.csv")
 
-#Bray-curtis dissimilarity-Hiararchical Clustering
+#Bray-curtis dissimilarity-Hierarchical Clustering
 #Val 0 = samples share all taxa, Val 1 = samples share no taxa
 ps_rel_otu <- data.frame(phyloseq::otu_table(ps_rel_abundfw))
 ps_rel_otu <- t(ps_rel_otu)
 bc_dist <- vegan::vegdist(ps_rel_otu, method = "bray")
-as.matrix(bc_dist)[1:5, 1:5]
+as.matrix(bc_dist)
 
 ward <- as.dendrogram(hclust(bc_dist, method = "ward.D2"))
 #Provide color codes
@@ -405,34 +406,37 @@ dev.off()
 #This is an ALTERNATE measure of Alpha-diversity
 #Do not include both Shannon and Breakaway
 #Or do, and have a comparison discussion
+###This does not work with ps_phylumfw as it has too little data. 
+#Probably shouldnt be jumping back and forth between data sets
 ba_adiv <- breakaway::breakaway(MBphyfw)
 ba_adiv[1]
-sink("ba_adiv.txt")
-  ba_adiv[1]
-dev.off()
+#sink("ba_adiv.txt")
+  #ba_adiv[1]
+#dev.off()
 
 #Plot estimates
-png(filename = "breakaway.png", width = 560, height = 560, units = "mm", res = 1000, pointsize = 12)
+png(filename = "breakaway_fw.png", width = 560, height = 560, units = "mm", res = 1000, pointsize = 12)
 
-plot(ba_adiv, MBphyfw, color = "Treatment")  
+plot(ba_adiv, ps_phylumfw, color = "Treatment")  
 
 dev.off()
 
 #Examine models
 summary(ba_adiv) %>%
-  add_column("SampleNames" = MBphyfw %>% otu_table %>% sample_names)  
+  add_column("SampleNames" = ps_phylumfw %>% otu_table %>% sample_names)  
 #Test for group differnce
 bt <- breakaway::betta(summary(ba_adiv)$estimate,
                        summary(ba_adiv)$error,
-                       make_design_matrix(MBphyfw, "Treatment"))
+                       make_design_matrix(ps_phylumfw, "Treatment"))
 bt$table   
 class(bt)
-sink("breakaway_beta.txt")
-  class(bt)
-dev.off()
+#sink("breakaway_beta.txt")
+  #class(bt)
+#dev.off()
 
-###Shannons anyways for good measure
-png(filename = "Shannon.png", width = 560, height = 560, units = "mm", res = 1000, pointsize = 12)
+###Observed Richness and Shannons anyways for good measure
+#Removed the rarefaction step
+png(filename = "ObservedRichness.png", width = 560, height = 560, units = "mm", res = 1000, pointsize = 12)
 
 ggplot(data = data.frame("total_reads" =  phyloseq::sample_sums(MBphyfw),
                          "observed" = phyloseq::estimate_richness(MBphyfw, measures = "Observed")[, 1]),
@@ -443,19 +447,31 @@ ggplot(data = data.frame("total_reads" =  phyloseq::sample_sums(MBphyfw),
 
 dev.off()
 
-#Subsample for rare reads/group differences
-(ps_rare <- phyloseq::rarefy_even_depth(ps_phylumfw, replace = FALSE)) 
-head(phyloseq::sample_sums(ps_rare))
-adiv <- data.frame(
-  "Observed" = phyloseq::estimate_richness(ps_rare, measures = "Observed"),
-  "Shannon" = phyloseq::estimate_richness(ps_rare, measures = "Shannon"),
-  #"PD" = picante::pd(samp = data.frame(t(data.frame(phyloseq::otu_table(ps_rare)))), tree = phyloseq::phy_tree(ps_rare))[, 1],
-  "Group" = phyloseq::sample_data(ps_rare)$Treatment)
-head(adiv)
-write.csv(adiv, "adiv_results.csv")
-sink("adiv.txt")
-  head(adiv)
+png(filename = "Shannon.png", width = 560, height = 560, units = "mm", res = 1000, pointsize = 12)
+
+ggplot(data = data.frame("total_reads" =  phyloseq::sample_sums(MBphyfw),
+                         "Shannon" = phyloseq::estimate_richness(MBphyfw, measures = "Shannon")[, 1]),
+       aes(x = total_reads, y = Shannon)) +
+  geom_point() +
+  geom_smooth(method="lm", se = FALSE) +
+  labs(x = "\nTotal Reads", y = "Shannon\n")
+
 dev.off()
+
+###I don't think this does what we want it to do
+#Subsample for rare reads/group differences
+##This step rarefies which is not what we want(ps_rare <- phyloseq::rarefy_even_depth(ps_phylumfw, replace = FALSE)) 
+
+adiv <- data.frame(
+  "Observed" = phyloseq::estimate_richness(ps_phylumfw, measures = "Observed"),
+  "Shannon" = phyloseq::estimate_richness(ps_phylumfw, measures = "Shannon"),
+  #"PD" = picante::pd(samp = data.frame(t(data.frame(phyloseq::otu_table(ps_rare)))), tree = phyloseq::phy_tree(ps_rare))[, 1],
+  "Group" = phyloseq::sample_data(ps_phylumfw)$Treatment)
+head(adiv)
+#write.csv(adiv, "adiv_results.csv")
+#sink("adiv.txt")
+  #head(adiv)
+#dev.off()
 
 #Plot
 png(filename = "adiv.png", width = 560, height = 560, units = "mm", res = 1000, pointsize = 12)
@@ -478,7 +494,7 @@ adiv %>%
   dplyr::summarise(median_observed = median(Observed),
                    median_shannon = median(Shannon))
 #Shannon test
-wilcox.test(Observed ~ Shannon, data = adiv, exact = FALSE, conf.int = TRUE)
+#wilcox.test(Observed ~ Shannon, data = adiv, exact = FALSE, conf.int = TRUE)
 
 #Beta-diversity
 #Aitchison Distance
@@ -488,9 +504,9 @@ phyloseq::otu_table(ps_clr)
 
 #PCA plot-data generation
 ord_clr <- phyloseq::ordinate(ps_clr, "RDA")
-sink("PCA_data.txt")
-  ord_clr
-dev.off()
+#sink("PCA_data.txt")
+  #ord_clr
+#dev.off()
 
 #Plot scree plot
 png(filename = "ScreePCA.png", width = 560, height = 560, units = "mm", res = 1000, pointsize = 12)
@@ -518,9 +534,9 @@ dev.off()
 clr_dist_matrix <- phyloseq::distance(ps_clr, method = "euclidean") 
 
 #ADONIS test
-adonis_results = vegan::adonis(clr_dist_matrix ~ phyloseq::sample_data(ps_clr)$Treatment)
-write.csv(adonis_results$aov.tab, "adonis_aov_results.csv")
-write.csv(adonis_results$call.tab, "adonis_call_results.csv")
+adonis_results = vegan::adonis2(clr_dist_matrix ~ phyloseq::sample_data(ps_clr)$Treatment)
+#write.csv(adonis_results$aov.tab, "adonis_aov_results.csv")
+#write.csv(adonis_results$call.tab, "adonis_call_results.csv")
 sink("adonis.txt")
   adonis_results
 dev.off()
@@ -540,52 +556,54 @@ boxplot(dispr, main = "", xlab = "")
 permu_dispr = permutest(dispr)
 
 dev.off()
-write.csv(permu_dispr$tab, "dispersionpermutation_results.csv")
+
+#write.csv(permu_dispr$tab, "dispersionpermutation_results.csv")
 sink("dispersion_permutation.txt")
   permu_dispr
 dev.off()
 
+###This may be broken. We have downstream stat outputs but should double check
 #Finding potential causal bacteria
 #Generate data.frame with OTUs and metadata
-ps_wilcox <- data.frame(t(data.frame(phyloseq::otu_table(ps_clr))))
-ps_wilcox$Treatment <- phyloseq::sample_data(ps_clr)$Treatment
+  ps_wilcox <- data.frame(t(data.frame(phyloseq::otu_table(ps_clr))))
+  ps_wilcox$Treatment <- phyloseq::sample_data(ps_clr)$Treatment
 
 #Define functions to pass to map
-wilcox_model <- function(df){
-  wilcox.test(abund ~ Treatment, data = df)
-}
-wilcox_pval <- function(df){
-  wilcox.test(abund ~ Treatment, data = df)$p.value
-}
+  wilcox_model <- function(df){
+    wilcox.test(abund ~ Treatment, data = df)
+  }
+  wilcox_pval <- function(df){
+    wilcox.test(abund ~ Treatment, data = df)$p.value
+  }
 
 #Create nested data frames by OTU and loop over each using map 
-wilcox_results <- ps_wilcox %>%
-  gather(key = OTU, value = abund, -Treatment) %>%
-  group_by(OTU) %>%
-  nest() %>%
-  mutate(wilcox_test = map(data, wilcox_model),
+  wilcox_results <- ps_wilcox %>%
+    gather(key = OTU, value = abund, -Treatment) %>%
+    group_by(OTU) %>%
+    nest() %>%
+    mutate(wilcox_test = map(data, wilcox_model),
          p_value = map(data, wilcox_pval))                       
 
 #Show results
-head(wilcox_results)
-head(wilcox_results$data[[1]])
-wilcox_results$wilcox_test[[1]]
-wilcox_results$p_value[[1]]
-sink("wilcox_results.txt")
-  wilcox_results
-dev.off()
+  head(wilcox_results)
+  head(wilcox_results$data[[1]])
+  wilcox_results$wilcox_test[[1]]
+  wilcox_results$p_value[[1]]
+  sink("wilcox_results.txt")
+    wilcox_results
+  dev.off()
 
-wilcox_results$wilcox_test[[1]]
-wilcox_results$p_value[[1]]
+  wilcox_results$wilcox_test[[1]]
+  wilcox_results$p_value[[1]]
 
 #Unnesting
-wilcox_results <- wilcox_results %>%
-  dplyr::select(OTU, p_value) %>%
-  unnest()
-head(wilcox_results)  
-sink("wilcox_results.csv")
-wilcox_results
-dev.off()
+  wilcox_results <- wilcox_results %>%
+    dplyr::select(OTU, p_value) %>%
+    unnest()
+  head(wilcox_results)  
+  sink("wilcox_results.csv")
+  wilcox_results
+  dev.off()
 
 #Adding taxonomic labels
 taxa_info <- data.frame(tax_table(ps_clr))
@@ -603,8 +621,9 @@ sink("Wilcoxon_FDRpval.txt")
   Wilcoxon_FDRpval
 dev.off()
 
-write.csv(Wilcoxon_FDRpval, "Wilcoxon_FRDpval_results.csv")
+#write.csv(Wilcoxon_FDRpval, "Wilcoxon_FRDpval_results.csv")
 
+###Had to use the MBphyfw dataset. Probably shouldn't do this
 #Run ALDEx2- ANOVA-like Differential Expression (ALDEx2 pkg)
 aldex2_da <- ALDEx2::aldex(data.frame(phyloseq::otu_table(MBphyfw)), phyloseq::sample_data(MBphyfw)$Treatment, test="t", effect = TRUE, denom="iqlr")
 sink("aldex.txt")
@@ -626,38 +645,7 @@ sig_aldex2 <- aldex2_da %>%
 sig_aldex2 <- left_join(sig_aldex2, taxa_info)
 sig_aldex2
 
-#Predictive modeling
-#Generate data.frame
-(ps_clr <- microbiome::transform(MBphyfw, "clr"))
-ord_clr <- phyloseq::ordinate(ps_clr, "RDA")
-clr_pcs <- data.frame(
-  "pc1" = ord_clr$CA$u[,1],
-  "pc2" = ord_clr$CA$u[,2],
-  "pc3" = ord_clr$CA$u[,2],
-  "Group" = phyloseq::sample_data(ps_clr)$Treatment)
-clr_pcs$Group_num <- ifelse(clr_pcs$Group == "Control", 0, 1)
-head(clr_pcs)
-
-#Specify a datadist object (for rms)
-dd <- datadist(clr_pcs)
-options(datadist = "dd")
-
-#Plot the unconditional associations
-a <- ggplot(clr_pcs, aes(x = pc1, y = Group_num)) +
-  Hmisc::histSpikeg(Group_num ~ pc1, lowess = TRUE, data = clr_pcs) +
-  labs(x = "\nPC1", y = "Pr(Diverse)\n")
-b <- ggplot(clr_pcs, aes(x = pc2, y = Group_num)) +
-  Hmisc::histSpikeg(Group_num ~ pc2, lowess = TRUE, data = clr_pcs) +
-  labs(x = "\nPC2", y = "Pr(Diverse)\n")
-c <- ggplot(clr_pcs, aes(x = pc3, y = Group_num)) +
-  Hmisc::histSpikeg(Group_num ~ pc3, lowess = TRUE, data = clr_pcs) +
-  labs(x = "\nPC3", y = "Pr(Diverse)\n")
-
-png(filename = "unconditional_associations.png")
-  cowplot::plot_grid(a, b, c, nrow = 2, ncol = 2, scale = .9, labels = "AUTO")
-dev.off()
-
-#Heatmap
+#Heatmap ##Seems to have broken again, look upstream at MBphy
 png(file = "phylumheatmap.png", width = 380, height = 190, units = "mm", res = 1000, pointsize = 12)
 
 c = plot_heatmap(MBphy, taxa.label = "phylum")
@@ -669,7 +657,7 @@ dev.off()
 #Shared Core Microbiota -microbiome, microbiomeutilities, and eulerr pkgs
 #This should use phyloseq objects, I think
 
-table(meta(ps_phylum)$Treatment, useNA = "always")
+table(meta(ps_phylumfw)$Treatment, useNA = "always")
 pseq.rel <- microbiome::transform(ps_phylum, "compositional")
 groups = unique(as.character(meta(pseq.rel)$Treatment))
 print(groups)
@@ -690,3 +678,35 @@ for (n in groups){
 mycols <- c(Diverse="#d6e2e9", Control="#cbf3f0", Maternal="#fcf5c7") 
 plot(venn(list_core),
      fills = mycols)
+
+###phyloseq Richness Estimates
+rich = estimate_richness(ps_phylum)
+#write.csv(rich,"richness.csv")
+png(file = "richness_mbphy.png")
+plot_richness(ps_phylum, measures = c("Observed", "Chao1", "Shannon"))
+dev.off()
+
+richfw = estimate_richness(ps_phylumfw)
+
+#write.csv(richfw,"richness_fw.csv")
+png(file = "richness_mbphyfw.png")
+plot_richness(ps_phylumfw, measures = c("Observed", "Chao1", "Shannon"))
+dev.off()
+
+
+###Read in Alpha_Diversity file
+###Alpha diversity testing
+full_lm = lm(Shannon ~ Treatment, data = Alpha_Diversity)
+summary(full_lm)
+sink()
+  full_lm
+dev.off()
+
+Alpha_Diversity_dietary = Alpha_Diversity[-19:-22,]
+dietary_lm = lm(Shannon ~ Treatment, data = Alpha_Diversity_dietary)
+summary(dietary_lm)
+sink()
+  summary(dietary_lm)
+dev.off()
+
+t.test(Shannon ~ Treatment, data = Alpha_Diversity_dietary)
